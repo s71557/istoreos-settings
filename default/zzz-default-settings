@@ -8,9 +8,9 @@
 
 # OTA
 if [ "$VERSION_TYPE" = "minimal" ]; then
-    OTA_URL="https://raw.githubusercontent.com/Jaykwok2999/istoreos-actions/refs/heads/api/fw.json"
+    OTA_URL="https://api.cooluc.com/openwrt/ota_minimal.json"
 else
-    OTA_URL="https://raw.githubusercontent.com/Jaykwok2999/istoreos-actions/refs/heads/api/fw.json"
+    OTA_URL="https://api.cooluc.com/openwrt/ota.json"
 fi
 
 devices_setup()
@@ -21,7 +21,7 @@ devices_setup()
             [ ! -d "/usr/share/openwrt_core" ] && {
                 openwrt_core="openwrt_core/armsr-armv8"
                 sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/sbwml/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
             }
             uci set ota.config.api_url="$OTA_URL"
             uci commit ota
@@ -44,7 +44,7 @@ devices_setup()
         [ ! -d "/usr/share/openwrt_core" ] && {
             openwrt_core="openwrt_core/arm_cortex-a9"
             sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-            sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+            sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/sbwml/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
         }
         uci set ota.config.api_url="$OTA_URL"
         uci commit ota
@@ -69,7 +69,7 @@ devices_setup()
             uci -q set wireless.wifinet1=wifi-iface
             uci -q set wireless.wifinet1.device='radio1'
             uci -q set wireless.wifinet1.mode='ap'
-            uci -q set wireless.wifinet1.ssid='iStoreOS_2.4G'
+            uci -q set wireless.wifinet1.ssid='NETGEAR_2.4G'
             uci -q set wireless.wifinet1.encryption='none'
             uci -q set wireless.wifinet1.network='lan'
             uci -q set wireless.radio1.htmode='HT40'
@@ -80,7 +80,7 @@ devices_setup()
             uci -q set wireless.wifinet2=wifi-iface
             uci -q set wireless.wifinet2.device='radio2'
             uci -q set wireless.wifinet2.mode='ap'
-            uci -q set wireless.wifinet2.ssid='iStoreOS_5G-1'
+            uci -q set wireless.wifinet2.ssid='NETGEAR_5G-1'
             uci -q set wireless.wifinet2.encryption='none'
             uci -q set wireless.wifinet2.network='lan'
             uci -q set wireless.radio2.htmode='VHT80'
@@ -103,6 +103,7 @@ devices_setup()
     esac
 }
 
+# timezone
 uci -q batch <<-EOF
 	set system.@system[0].hostname='iStoreOS'
 	set system.@system[0].timezone='CST-8'
@@ -117,8 +118,11 @@ EOF
 uci commit system
 
 # 设置默认主题为argon
-uci set luci.main.mediaurlbase='/luci-static/argon'
-uci commit luci
+if [ "$VERSION_TYPE" != "minimal" ] && [ -z "$(uci -q get luci.main.pollinterval)" ]; then
+    uci set luci.main.mediaurlbase='/luci-static/argon'
+    uci set luci.main.pollinterval='3'
+    uci commit luci
+fi
 
 # opkg mirror
 if [ $(grep -c SNAPSHOT /etc/opkg/distfeeds.conf) -eq '0' ]; then
@@ -144,10 +148,12 @@ uci set firewall.@zone[1].input='ACCEPT'
 uci commit firewall
 
 # diagnostics
-uci set luci.diag.dns='www.baidu.com'
-uci set luci.diag.ping='www.baidu.com'
-uci set luci.diag.route='www.baidu.com'
-uci commit luci
+if [ $(uci -q get luci.diag.ping) = "openwrt.org" ]; then
+    uci set luci.diag.dns='www.baidu.com'
+    uci set luci.diag.ping='www.baidu.com'
+    uci set luci.diag.route='www.baidu.com'
+    uci commit luci
+fi
 
 # 设置主机名映射，解决安卓原生TV首次连不上网的问题
 uci add dhcp domain
@@ -168,7 +174,13 @@ if [ "$( opkg list-installed 2>/dev/null| grep -c "^dnsmasq")" -ne '0' ];then
   /etc/init.d/dnsmasq restart
 fi
 
-
+# firewall
+[ $(grep -c shortcut_fe /etc/config/firewall) -eq '0' ] && uci set firewall.@defaults[0].flow_offloading='1'
+if [ $(ifconfig -a | grep -o '^eth[^ ]*' | wc -l) -le 1 ] || [ "$OPENWRT_BOARD" = "armsr/armv8" ]; then
+    uci set firewall.@zone[1].input='ACCEPT'
+fi
+uci set firewall.@defaults[0].input='ACCEPT'
+uci commit firewall
 
 # adguardhome
 if [ "$( opkg list-installed 2>/dev/null| grep -c "^luci-app-adguardhome")" -ne '0' ];then
