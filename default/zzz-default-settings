@@ -16,19 +16,38 @@ fi
 devices_setup()
 {
     case "$(board_name)" in
-    x86_64)
+    armsr,armv8)
         [ $(uname -r | awk -F. '{print $1}') = 6 ] && {
-            [ -f /sys/kernel/btf/vmlinux ] && [ ! -d "/usr/share/openwrt_core" ] && {
+            [ ! -d "/usr/share/openwrt_core" ] && {
+                openwrt_core="openwrt_core/armsr-armv8"
                 sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-                sed -i "\$a\src/gz openwrt_core https://mirrors.sustech.edu.cn/openwrt/releases/24.10.1/targets/x86/64/kmods/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
             }
+            uci set ota.config.api_url="$OTA_URL"
+            uci commit ota
+        }
+        ;;
+    friendlyarm,nanopi-r4s|\
+    friendlyarm,nanopi-r5c|\
+    friendlyarm,nanopi-r5s)
+        uci set irqbalance.irqbalance.enabled='0'
+        uci commit irqbalance
+        service irqbalance stop
+        [ ! -d "/usr/share/openwrt_core" ] && {
+            sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
+            sed -i "\$a\src/gz openwrt_core https://core.cooluc.com/aarch64_generic/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
         }
         uci set ota.config.api_url="$OTA_URL"
         uci commit ota
         ;;
-    esac
-}
-    
+    netgear,r8500)
+        [ ! -d "/usr/share/openwrt_core" ] && {
+            openwrt_core="openwrt_core/arm_cortex-a9"
+            sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
+            sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+        }
+        uci set ota.config.api_url="$OTA_URL"
+        uci commit ota
         [ -f "/etc/config/wireless" ] && [ $(grep -c "default_radio" /etc/config/wireless) -ge '1' ] && {
             uci -q del wireless.default_radio2
             uci -q del wireless.default_radio1
@@ -39,7 +58,7 @@ devices_setup()
             uci -q set wireless.wifinet0=wifi-iface
             uci -q set wireless.wifinet0.device='radio0'
             uci -q set wireless.wifinet0.mode='ap'
-            uci -q set wireless.wifinet0.ssid='iStoreOS_5G-2'
+            uci -q set wireless.wifinet0.ssid='NETGEAR_5G-2'
             uci -q set wireless.wifinet0.encryption='none'
             uci -q set wireless.wifinet0.network='lan'
             uci -q set wireless.radio0.htmode='VHT80'
@@ -50,7 +69,7 @@ devices_setup()
             uci -q set wireless.wifinet1=wifi-iface
             uci -q set wireless.wifinet1.device='radio1'
             uci -q set wireless.wifinet1.mode='ap'
-            uci -q set wireless.wifinet1.ssid='iStoreOS_2.4G'
+            uci -q set wireless.wifinet1.ssid='NETGEAR_2.4G'
             uci -q set wireless.wifinet1.encryption='none'
             uci -q set wireless.wifinet1.network='lan'
             uci -q set wireless.radio1.htmode='HT40'
@@ -61,7 +80,7 @@ devices_setup()
             uci -q set wireless.wifinet2=wifi-iface
             uci -q set wireless.wifinet2.device='radio2'
             uci -q set wireless.wifinet2.mode='ap'
-            uci -q set wireless.wifinet2.ssid='iStoreOS_5G-1'
+            uci -q set wireless.wifinet2.ssid='NETGEAR_5G-1'
             uci -q set wireless.wifinet2.encryption='none'
             uci -q set wireless.wifinet2.network='lan'
             uci -q set wireless.radio2.htmode='VHT80'
@@ -71,7 +90,18 @@ devices_setup()
             /sbin/wifi >/dev/null 2>&1
         }
         ;;
-    
+    x86_64)
+        [ $(uname -r | awk -F. '{print $1}') = 6 ] && {
+            [ -f /sys/kernel/btf/vmlinux ] && [ ! -d "/usr/share/openwrt_core" ] && {
+                sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
+                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+            }
+        }
+        uci set ota.config.api_url="$OTA_URL"
+        uci commit ota
+        ;;
+    esac
+}
 
 # timezone
 uci -q batch <<-EOF
