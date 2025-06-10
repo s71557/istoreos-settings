@@ -8,7 +8,9 @@
 
 # OTA
 if [ "$VERSION_TYPE" = "minimal" ]; then
-    OTA_URL="https://github.com/Jaykwok2999/istoreos-actions/releases/download/iStoreOS_24.10_X86_64/istoreos-x86-64-generic-squashfs-combined-efi.img.gz"
+    OTA_URL="https://raw.githubusercontent.com/Jaykwok2999/istoreos-actions/refs/heads/api/fw.json"
+else
+    OTA_URL="https://raw.githubusercontent.com/Jaykwok2999/istoreos-actions/refs/heads/api/fw.json"
 fi
 
 devices_setup()
