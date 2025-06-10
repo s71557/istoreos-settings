@@ -8,9 +8,9 @@
 
 # OTA
 if [ "$VERSION_TYPE" = "minimal" ]; then
-    OTA_URL="https://api.cooluc.com/openwrt/ota_minimal.json"
+    OTA_URL="https://github.com/Jaykwok2999/istoreos-actions/releases/download/iStoreOS_24.10_X86_64/istoreos-x86-64-generic-squashfs-combined-efi.img.gz"
 else
-    OTA_URL="https://api.cooluc.com/openwrt/ota.json"
+    OTA_URL="https://github.com/Jaykwok2999/istoreos-actions/releases/download/iStoreOS_24.10_X86_64/istoreos-x86-64-generic-squashfs-combined-efi.img.gz"
 fi
 
 devices_setup()
@@ -21,7 +21,7 @@ devices_setup()
             [ ! -d "/usr/share/openwrt_core" ] && {
                 openwrt_core="openwrt_core/armsr-armv8"
                 sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/sbwml/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
             }
             uci set ota.config.api_url="$OTA_URL"
             uci commit ota
@@ -44,7 +44,7 @@ devices_setup()
         [ ! -d "/usr/share/openwrt_core" ] && {
             openwrt_core="openwrt_core/arm_cortex-a9"
             sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-            sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/sbwml/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+            sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
         }
         uci set ota.config.api_url="$OTA_URL"
         uci commit ota
@@ -58,7 +58,7 @@ devices_setup()
             uci -q set wireless.wifinet0=wifi-iface
             uci -q set wireless.wifinet0.device='radio0'
             uci -q set wireless.wifinet0.mode='ap'
-            uci -q set wireless.wifinet0.ssid='NETGEAR_5G-2'
+            uci -q set wireless.wifinet0.ssid='iStoreOS_5G-2'
             uci -q set wireless.wifinet0.encryption='none'
             uci -q set wireless.wifinet0.network='lan'
             uci -q set wireless.radio0.htmode='VHT80'
@@ -69,7 +69,7 @@ devices_setup()
             uci -q set wireless.wifinet1=wifi-iface
             uci -q set wireless.wifinet1.device='radio1'
             uci -q set wireless.wifinet1.mode='ap'
-            uci -q set wireless.wifinet1.ssid='NETGEAR_2.4G'
+            uci -q set wireless.wifinet1.ssid='iStoreOS_2.4G'
             uci -q set wireless.wifinet1.encryption='none'
             uci -q set wireless.wifinet1.network='lan'
             uci -q set wireless.radio1.htmode='HT40'
@@ -94,7 +94,7 @@ devices_setup()
         [ $(uname -r | awk -F. '{print $1}') = 6 ] && {
             [ -f /sys/kernel/btf/vmlinux ] && [ ! -d "/usr/share/openwrt_core" ] && {
                 sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-                sed -i "\$a\src/gz openwrt_core https://core.cooluc.com/x86_64/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+                sed -i "\$a\src/gz openwrt_core https://mirrors.sustech.edu.cn/openwrt/releases/24.10.1/targets/x86/64/kmods/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
             }
         }
         uci set ota.config.api_url="$OTA_URL"
