@@ -1,5 +1,110 @@
 #!/bin/sh
 
+. /etc/os-release
+. /lib/functions/uci-defaults.sh
+
+[ $(uname -m) = "x86_64" ] && alias board_name="echo x86_64"
+[ "$OPENWRT_BOARD" = "armsr/armv8" ] && alias board_name="echo armsr,armv8"
+
+# OTA
+if [ "$VERSION_TYPE" = "minimal" ]; then
+    OTA_URL="https://raw.githubusercontent.com/Jaykwok2999/istoreos-actions/refs/heads/api/fw.json"
+else
+    OTA_URL="https://raw.githubusercontent.com/Jaykwok2999/istoreos-actions/refs/heads/api/fw.json"
+fi
+
+devices_setup()
+{
+    case "$(board_name)" in
+    armsr,armv8)
+        [ $(uname -r | awk -F. '{print $1}') = 6 ] && {
+            [ ! -d "/usr/share/openwrt_core" ] && {
+                openwrt_core="openwrt_core/armsr-armv8"
+                sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
+                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+            }
+            uci set ota.config.api_url="$OTA_URL"
+            uci commit ota
+        }
+        ;;
+    friendlyarm,nanopi-r4s|\
+    friendlyarm,nanopi-r5c|\
+    friendlyarm,nanopi-r5s)
+        uci set irqbalance.irqbalance.enabled='0'
+        uci commit irqbalance
+        service irqbalance stop
+        [ ! -d "/usr/share/openwrt_core" ] && {
+            openwrt_core="openwrt_core/aarch64_generic"
+            sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
+            sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+        }
+        uci set ota.config.api_url="$OTA_URL"
+        uci commit ota
+        ;;
+    netgear,r8500)
+        [ ! -d "/usr/share/openwrt_core" ] && {
+            openwrt_core="openwrt_core/arm_cortex-a9"
+            sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
+            sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+        }
+        uci set ota.config.api_url="$OTA_URL"
+        uci commit ota
+        [ -f "/etc/config/wireless" ] && [ $(grep -c "default_radio" /etc/config/wireless) -ge '1' ] && {
+            uci -q del wireless.default_radio2
+            uci -q del wireless.default_radio1
+            uci -q del wireless.default_radio0
+            uci -q del wireless.wifinet0
+            uci -q del wireless.wifinet1
+            uci -q del wireless.wifinet2
+            uci -q set wireless.wifinet0=wifi-iface
+            uci -q set wireless.wifinet0.device='radio0'
+            uci -q set wireless.wifinet0.mode='ap'
+            uci -q set wireless.wifinet0.ssid='iStoreOS_5G-2'
+            uci -q set wireless.wifinet0.encryption='none'
+            uci -q set wireless.wifinet0.network='lan'
+            uci -q set wireless.radio0.htmode='VHT80'
+            uci -q set wireless.radio0.channel='161'
+            uci -q set wireless.radio0.country='AU'
+            uci -q set wireless.radio0.cell_density='3'
+            uci -q del wireless.radio0.disabled
+            uci -q set wireless.wifinet1=wifi-iface
+            uci -q set wireless.wifinet1.device='radio1'
+            uci -q set wireless.wifinet1.mode='ap'
+            uci -q set wireless.wifinet1.ssid='iStoreOS_2.4G'
+            uci -q set wireless.wifinet1.encryption='none'
+            uci -q set wireless.wifinet1.network='lan'
+            uci -q set wireless.radio1.htmode='HT40'
+            uci -q set wireless.radio1.channel='9'
+            uci -q set wireless.radio1.country='AU'
+            uci -q set wireless.radio1.cell_density='3'
+            uci -q del wireless.radio1.disabled
+            uci -q set wireless.wifinet2=wifi-iface
+            uci -q set wireless.wifinet2.device='radio2'
+            uci -q set wireless.wifinet2.mode='ap'
+            uci -q set wireless.wifinet2.ssid='iStoreOS_5G-1'
+            uci -q set wireless.wifinet2.encryption='none'
+            uci -q set wireless.wifinet2.network='lan'
+            uci -q set wireless.radio2.htmode='VHT80'
+            uci -q set wireless.radio2.channel='36'
+            uci -q del wireless.radio2.disabled
+            uci commit wireless
+            /sbin/wifi >/dev/null 2>&1
+        }
+        ;;
+    x86_64)
+        [ $(uname -r | awk -F. '{print $1}') = 6 ] && {
+            [ -f /sys/kernel/btf/vmlinux ] && [ ! -d "/usr/share/openwrt_core" ] && {
+                openwrt_core="openwrt_core/x86_64"
+                sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
+                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+            }
+        }
+        uci set ota.config.api_url="$OTA_URL"
+        uci commit ota
+        ;;
+    esac
+}
+
 # timezone
 uci -q batch <<-EOF
 	set system.@system[0].hostname='iStoreOS'
