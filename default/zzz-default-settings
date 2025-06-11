@@ -8,9 +8,9 @@
 
 # OTA
 if [ "$VERSION_TYPE" = "minimal" ]; then
-    OTA_URL="https://raw.githubusercontent.com/Jaykwok2999/istoreos-actions/refs/heads/api/fw.json"
+    OTA_URL="https://raw.githubusercontent.com/s71557/istoreos-actions2999/refs/heads/api/fw.json"
 else
-    OTA_URL="https://raw.githubusercontent.com/Jaykwok2999/istoreos-actions/refs/heads/api/fw.json"
+    OTA_URL="https://raw.githubusercontent.com/s71557/istoreos-actions2999/refs/heads/api/fw.json"
 fi
 
 devices_setup()
@@ -21,7 +21,7 @@ devices_setup()
             [ ! -d "/usr/share/openwrt_core" ] && {
                 openwrt_core="openwrt_core/armsr-armv8"
                 sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/s71557/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
             }
             uci set ota.config.api_url="$OTA_URL"
             uci commit ota
@@ -36,7 +36,7 @@ devices_setup()
         [ ! -d "/usr/share/openwrt_core" ] && {
             openwrt_core="openwrt_core/aarch64_generic"
             sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-            sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+            sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/s71557/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
         }
         uci set ota.config.api_url="$OTA_URL"
         uci commit ota
@@ -96,7 +96,7 @@ devices_setup()
             [ -f /sys/kernel/btf/vmlinux ] && [ ! -d "/usr/share/openwrt_core" ] && {
                 openwrt_core="openwrt_core/x86_64"
                 sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/Jaykwok2999/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
+                sed -i "\$a\src/gz openwrt_core https://raw.githubusercontent.com/s71557/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
             }
         }
         uci set ota.config.api_url="$OTA_URL"
@@ -183,22 +183,6 @@ if [ $(ifconfig -a | grep -o '^eth[^ ]*' | wc -l) -le 1 ] || [ "$OPENWRT_BOARD" 
 fi
 uci set firewall.@defaults[0].input='ACCEPT'
 uci commit firewall
-
-# adguardhome
-if [ "$( opkg list-installed 2>/dev/null| grep -c "^luci-app-adguardhome")" -ne '0' ];then
-uci batch << EOI
-set AdGuardHome.AdGuardHome.enabled='1'
-set AdGuardHome.AdGuardHome.httpport='3000'
-set AdGuardHome.AdGuardHome.binpath='/usr/bin/AdGuardHome/AdGuardHome'
-set AdGuardHome.AdGuardHome.waitonboot='1'
-set AdGuardHome.AdGuardHome.redirect='dnsmasq-upstream'
-set AdGuardHome.AdGuardHome.ucitracktest='1'
-set AdGuardHome.AdGuardHome.old_redirect='dnsmasq-upstream'
-set AdGuardHome.AdGuardHome.old_port='1745'
-set AdGuardHome.AdGuardHome.old_enabled='1'
-EOI
-  uci commit AdGuardHome
-  /etc/init.d/AdGuardHome restart
 
 
 exit 0
