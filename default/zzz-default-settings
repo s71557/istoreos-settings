@@ -3,29 +3,34 @@
 . /etc/os-release
 . /lib/functions/uci-defaults.sh
 
-[ $(uname -m) = "x86_64" ] && alias board_name="echo x86_64"
-[ "$OPENWRT_BOARD" = "armsr/armv8" ] && alias board_name="echo armsr,armv8"
+# board_name 函数代替 alias
+board_name() {
+    if [ "$(uname -m)" = "x86_64" ]; then
+        echo "x86_64"
+    elif [ "$OPENWRT_BOARD" = "armsr/armv8" ]; then
+        echo "armsr,armv8"
+    else
+        echo "$OPENWRT_BOARD"
+    fi
+}
 
-# OTA
-if [ "$VERSION_TYPE" = "minimal" ]; then
-    OTA_URL="https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/iStoreOS-Actions/refs/heads/api/fw.json"
-else
-    OTA_URL="https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/iStoreOS-Actions/refs/heads/api/fw.json"
-fi
+# OTA URL
+OTA_URL="https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/iStoreOS-Actions/refs/heads/api/fw.json"
 
 devices_setup()
 {
     case "$(board_name)" in
     armsr,armv8)
-        [ $(uname -r | awk -F. '{print $1}') = 6 ] && {
-            [ ! -d "/usr/share/openwrt_core" ] && {
+        if [ $(uname -r | awk -F. '{print $1}') -ge 6 ]; then
+            if [ ! -d "/usr/share/openwrt_core" ]; then
                 openwrt_core="openwrt_core/armsr-armv8"
                 sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-                sed -i "\$a\src/gz openwrt_core https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
-            }
+                sed -i "\$a\src/gz openwrt_core https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/${openwrt_core}/$(uname -r)" /etc/opkg/distfeeds.conf
+                mkdir -p /usr/share/openwrt_core
+            fi
             uci set ota.config.api_url="$OTA_URL"
             uci commit ota
-        }
+        fi
         ;;
     friendlyarm,nanopi-r4s|\
     friendlyarm,nanopi-r5c|\
@@ -33,30 +38,32 @@ devices_setup()
         uci set irqbalance.irqbalance.enabled='0'
         uci commit irqbalance
         service irqbalance stop
-        [ ! -d "/usr/share/openwrt_core" ] && {
+        if [ ! -d "/usr/share/openwrt_core" ]; then
             openwrt_core="openwrt_core/aarch64_generic"
             sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-            sed -i "\$a\src/gz openwrt_core https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
-        }
+            sed -i "\$a\src/gz openwrt_core https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/${openwrt_core}/$(uname -r)" /etc/opkg/distfeeds.conf
+            mkdir -p /usr/share/openwrt_core
+        fi
         uci set ota.config.api_url="$OTA_URL"
         uci commit ota
         ;;
     netgear,r8500)
-        [ ! -d "/usr/share/openwrt_core" ] && {
+        if [ ! -d "/usr/share/openwrt_core" ]; then
             openwrt_core="openwrt_core/arm_cortex-a9"
             sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-            sed -i "\$a\src/gz openwrt_core https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
-        }
+            sed -i "\$a\src/gz openwrt_core https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/${openwrt_core}/$(uname -r)" /etc/opkg/distfeeds.conf
+            mkdir -p /usr/share/openwrt_core
+        fi
         uci set ota.config.api_url="$OTA_URL"
         uci commit ota
         ;;
     x86_64)
-        [ $(uname -r | awk -F. '{print $1}') = 6 ] && {
-            [ -f /sys/kernel/btf/vmlinux ] && [ ! -d "/usr/share/openwrt_core" ] && {
-                sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
-                sed -i "\$a\src/gz openwrt_core https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/${openwrt_core}/$(grep Version /usr/lib/opkg/info/kernel.control | awk '{print $2}')" /etc/opkg/distfeeds.conf
-            }
-        }
+        if [ ! -d "/usr/share/openwrt_core" ]; then
+            openwrt_core="openwrt_core/x86_64"
+            sed -i '/openwrt_core/d' /etc/opkg/distfeeds.conf
+            sed -i "\$a\src/gz openwrt_core https://github.71557.dpdns.org/https://raw.githubusercontent.com/s71557/${openwrt_core}/$(uname -r)" /etc/opkg/distfeeds.conf
+            mkdir -p /usr/share/openwrt_core
+        fi
         uci set ota.config.api_url="$OTA_URL"
         uci commit ota
         ;;
@@ -64,12 +71,11 @@ devices_setup()
 }
 
 # docker mirror
-if [ -f /etc/config/dockerd ] && [ $(grep -c daocloud.io /etc/config/dockerd) -eq '0' ]; then
+if [ -f /etc/config/dockerd ] && ! grep -q 'registry_mirrors.*docker\.m\.daocloud\.io' /etc/config/dockerd; then
     uci add_list dockerd.globals.registry_mirrors="https://docker.m.daocloud.io"
     uci commit dockerd
+    /etc/init.d/dockerd restart
 fi
 
 # init
 devices_setup
-
-exit 0
