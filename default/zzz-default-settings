@@ -77,8 +77,12 @@ if [ -f /etc/config/dockerd ] && ! grep -q 'registry_mirrors.*docker\.m\.daoclou
     /etc/init.d/dockerd restart
 fi
 
-# 切换opkg源
-sed -i 's,downloads.openwrt.org,mirrors.pku.edu.cn/openwrt,g' /etc/opkg/distfeeds.conf
+# opkg mirror
+if [ $(grep -c SNAPSHOT /etc/opkg/distfeeds.conf) -eq '0' ]; then
+    sed -i 's,downloads.openwrt.org,mirrors.aliyun.com/openwrt,g' /etc/opkg/distfeeds.conf
+else
+    sed -i 's,downloads.openwrt.org,mirror.sjtu.edu.cn/openwrt,g' /etc/opkg/distfeeds.conf
+fi
 
 # packet steering
 uci -q get network.globals.packet_steering > /dev/null || {
