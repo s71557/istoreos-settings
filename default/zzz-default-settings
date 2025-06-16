@@ -77,5 +77,3 @@ if [ -f /etc/config/dockerd ] && ! grep -q 'registry_mirrors.*docker\.m\.daoclou
     /etc/init.d/dockerd restart
 fi
 
-# init
-devices_setup
