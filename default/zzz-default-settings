@@ -77,3 +77,7 @@ if [ -f /etc/config/dockerd ] && ! grep -q 'registry_mirrors.*docker\.m\.daoclou
     /etc/init.d/dockerd restart
 fi
 
+# 切换opkg源
+sed -i 's,downloads.openwrt.org,mirrors.pku.edu.cn/openwrt,g' /etc/opkg/distfeeds.conf
+
+exit 0
